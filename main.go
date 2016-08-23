@@ -109,7 +109,7 @@ var (
 )
 
 func main() {
-	kingpin.Version("0.1.0")
+	kingpin.Version("0.1.1")
 	kingpin.Parse()
 
 	if runtime.GOOS == "windows" {
