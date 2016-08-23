@@ -5,6 +5,7 @@ import (
 	gostrftime "github.com/jehiah/go-strftime"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -51,7 +52,6 @@ func mkdir(dirname string, perm os.FileMode, recursive bool) error {
 }
 
 func strftime(format string, t time.Time) string {
-	t.In(time.Local)
 	return gostrftime.Format(format, t)
 }
 
@@ -72,4 +72,26 @@ func createDestPath(srcPath, destDir, psep string) string {
 
 func rename(srcPath, destDir, psep string) error {
 	return os.Rename(srcPath, createDestPath(srcPath, destDir, psep))
+}
+
+func extractTime(srcPath string) string {
+	r := regexp.MustCompile(`(?:[a-bA-Z]+[._-])?([1-9][0-9]{3}[._/-]?[0-9]{2}[._/-]?[0-9]{2}[._/-]?([0-9]{2})?)(?:[a-bA-Z]+[._-])?`)
+
+	group := r.FindStringSubmatch(srcPath)
+
+	if len(group) == 0 {
+		return ""
+	}
+
+	return strings.Join(regexp.MustCompile("[._/-]").Split(group[1], -1), "")
+}
+
+func timeParse(timestr string) (time.Time, error) {
+	t, err := time.Parse("20060102", timestr)
+	if err == nil {
+		return t, nil
+	}
+
+	t, err = time.Parse("2006010215", timestr)
+	return t, err
 }

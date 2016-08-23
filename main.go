@@ -23,6 +23,7 @@ type Rename struct {
 	createDir bool
 	recursive bool
 	dryRun    bool
+	name      bool
 }
 
 func (r *Rename) do() error {
@@ -45,14 +46,30 @@ func (r *Rename) do() error {
 	var destDir string
 	var t time.Time
 
-	t = finfo.ModTime()
+	if *name {
+		timestr := extractTime(r.srcPath)
+		if timestr == "" {
+			return nil
+		}
+
+		t, err = timeParse(timestr)
+		if err != nil {
+			return err
+		}
+	} else {
+		t = finfo.ModTime()
+	}
 	destDir = fmt.Sprintf(pathFormat(psep), strings.TrimRight(r.destPath, psep), strftime(r.format, t))
 
 	if r.createDir {
 		if !isExist(destDir) {
 			if r.dryRun {
 				if v, ok := isCreated[destDir]; !(ok && v) {
-					fmt.Println("mkdir", destDir)
+					if r.recursive {
+						fmt.Println("mkdir", "-p", destDir)
+					} else {
+						fmt.Println("mkdir", destDir)
+					}
 				}
 				isCreated[destDir] = true
 			} else {
@@ -85,6 +102,7 @@ var (
 	recursive = kingpin.Flag("recursive", "create directories recursively").Short('r').Bool()
 	mode      = kingpin.Flag("mode", "file mode").Short('m').Default("0755").Int64()
 	dryRun    = kingpin.Flag("dry-run", "enable dry-run mode").Bool()
+	name      = kingpin.Flag("name", "name based slice (format %Y[._/-]?%m[._/-]?%d[._/-]?%H?)").Short('n').Bool()
 
 	isCreated = make(map[string]bool)
 	psep      = "/"
@@ -149,6 +167,7 @@ func main() {
 			createDir: *createDir,
 			recursive: *recursive,
 			dryRun:    *dryRun,
+			name:      *name,
 		}
 
 		err = r.do()
